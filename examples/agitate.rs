@@ -8,7 +8,7 @@ extern crate keybindings;
 use keybindings::*;
 
 /// Default list of keycodes and corresponding actions.
-const KEYCODES: &[(&str, Action)] = &[
+const KEYCODES: &[(&str, Action<String>)] = &[
     ("X", &yell),
     ("Y", &scream),
 ];
