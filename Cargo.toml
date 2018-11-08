@@ -1,10 +1,10 @@
 [package]
-name = "command"
+name = "keybindings"
 version = "0.1.0"
 authors = ["Bart Massey <bart@cs.pdx.edu>"]
 
 [dependencies]
 
-[[bin]]
-name = "command"
-path = "command.rs"
+[lib]
+name = "keybindings"
+path = "keybindings.rs"
