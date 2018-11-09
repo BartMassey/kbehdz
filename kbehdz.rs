@@ -14,23 +14,23 @@ use std::borrow::{Borrow, ToOwned};
 /// Type of actions with the given result type.
 pub type Action<'a, R> = &'a (Fn () -> R + 'a);
 
-// A `HashMap` is a great way to represent keybindings:
+// A `HashMap` is a great way to represent bindings:
 // efficient lookup and interior mutability. Newtype this
 // to avoid confusion in larger programs and for
 // readability.
 
-/// A `KeyBindings` object manages bindings between events
+/// A `Bindings` object manages bindings between events
 /// and actions. It has the capability to execute the
 /// selected action given an event.
-pub struct KeyBindings<'a, E, R>(HashMap<E, Action<'a, R>>)
+pub struct Bindings<'a, E, R>(HashMap<E, Action<'a, R>>)
     where E: Hash + Eq, R: 'a;
 
-impl <'a, E, R> KeyBindings<'a, E, R>
+impl <'a, E, R> Bindings<'a, E, R>
     where E: Hash + Eq, R: 'a
 {
-    /// Make a new empty keybinding.
+    /// Make a new empty binding.
     pub fn new() -> Self {
-        KeyBindings(HashMap::new())
+        Bindings(HashMap::new())
     }
 
     /// Make a new keybinding containing each binding in the
@@ -39,23 +39,23 @@ impl <'a, E, R> KeyBindings<'a, E, R>
     /// # Examples:
     ///
     /// ```
-    /// use keybindings::{Action, KeyBindings};
+    /// use kbehdz::{Action, Bindings};
     /// fn build_action<'a>(n: usize) -> Box<Fn() -> usize> {
     ///     Box::new(move || { n })
     /// }
     /// let aok = build_action(1);
     /// let bok = build_action(2);
     /// let bindings: &[_] = &[("a", &*aok), ("b", &*bok)];
-    /// let mut kc = KeyBindings::new_with_bindings(bindings);
+    /// let mut kc = Bindings::from_list(bindings);
     /// assert_eq!(kc.run_action("a").unwrap(), 1);
     /// ```
-    pub fn new_with_bindings<'b, T>(bindings: &'a [(&'b T, Action<'a, R>)])
+    pub fn from_list<'b, T>(bindings: &'a [(&'b T, Action<'a, R>)])
                                     -> Self
         where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
     {
-        let mut kbs = KeyBindings::new();
+        let mut kbs = Bindings::new();
         for (key, action) in bindings.iter() {
-            kbs.bind_key(key.to_owned(), action);
+            kbs.bind_action(key.to_owned(), action);
         }
         kbs
     }
@@ -67,12 +67,12 @@ impl <'a, E, R> KeyBindings<'a, E, R>
     /// # Examples:
     ///
     /// ```
-    /// use keybindings::{Action, KeyBindings};
+    /// use kbehdz::{Action, Bindings};
     /// let aok: Action<String> = &|| {
     ///     "aok".to_string()
     /// };
     /// let bindings = &[("a", aok)];
-    /// let mut kc = KeyBindings::new_with_bindings(bindings);
+    /// let mut kc = Bindings::from_list(bindings);
     /// assert_eq!(kc.run_action("a").unwrap(), "aok");
     /// ```
     pub fn run_action<T>(&self, key: &T) -> Option<R>
@@ -91,13 +91,13 @@ impl <'a, E, R> KeyBindings<'a, E, R>
     /// # Examples:
     ///
     /// ```
-    /// use keybindings::KeyBindings;
+    /// use kbehdz::Bindings;
     /// let one = || {1};
-    /// let mut kc = KeyBindings::new();
-    /// kc.bind_key(&'a', &one);
+    /// let mut kc = Bindings::new();
+    /// kc.bind_action(&'a', &one);
     /// assert_eq!(kc.run_action(&'a').unwrap(), 1);
     /// ```
-    pub fn bind_key<T>(&mut self, key: &T, action: Action<'a, R>)
+    pub fn bind_action<T>(&mut self, key: &T, action: Action<'a, R>)
         where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
     {
         self.0.insert(key.borrow().to_owned(), action);
@@ -110,14 +110,14 @@ impl <'a, E, R> KeyBindings<'a, E, R>
     /// # Examples:
     ///
     /// ```
-    /// use keybindings::{Action, KeyBindings};
+    /// use kbehdz::{Action, Bindings};
     /// let aok: Action<String> = &|| {
     ///     "aok".to_string()
     /// };
     /// let bindings = &[("a", aok)];
-    /// let mut kc = KeyBindings::new_with_bindings(bindings);
+    /// let mut kc = Bindings::from_list(bindings);
     /// let ax = kc.get_action("a").unwrap();
-    /// kc.bind_key("b", ax);
+    /// kc.bind_action("b", ax);
     /// assert_eq!(kc.run_action("b").unwrap(), "aok");
     /// ```
     pub fn get_action<T>(&self, key: &T) -> Option<Action<'a, R>>

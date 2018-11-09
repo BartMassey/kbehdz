@@ -4,12 +4,12 @@
 # distribution of this software for license terms.
 
 [package]
-name = "keybindings"
+name = "kbehdz"
 version = "0.1.0"
 authors = ["Bart Massey <bart@cs.pdx.edu>"]
 
 [dependencies]
 
 [lib]
-name = "keybindings"
-path = "keybindings.rs"
+name = "kbehdz"
+path = "kbehdz.rs"

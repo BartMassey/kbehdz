@@ -4,12 +4,12 @@
 // distribution of this software for license terms.
 
 
-//! A silly little demo of the keybindings crate exercising
-//! basic features.
+//! A silly little demo of the `kbehdz` crate exercising
+//! basic features. Inspiration is keybindings for a game.
 
-extern crate keybindings;
+extern crate kbehdz;
 
-use keybindings::*;
+use kbehdz::*;
 
 /// Default list of keycodes and corresponding actions.
 const KEYCODES: &[(&str, Action<String>)] = &[
@@ -29,9 +29,9 @@ fn scream() -> String {
 
 /// Mess around with the keybindings.
 fn main() {
-    let mut kbs = KeyBindings::new_with_bindings(KEYCODES);
+    let mut kbs = Bindings::from_list(KEYCODES);
     println!("{}", kbs.run_action("X").unwrap());
     let y_action = kbs.get_action("Y").unwrap();
-    kbs.bind_key("X", y_action);
+    kbs.bind_action("X", y_action);
     println!("{}", kbs.run_action(&"X".to_string()).unwrap());
 }
