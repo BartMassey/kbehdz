@@ -33,5 +33,5 @@ fn main() {
     println!("{}", kbs.run_action("X").unwrap());
     let y_action = kbs.get_action("Y").unwrap();
     kbs.bind_key("X", y_action);
-    println!("{}", kbs.run_action("X").unwrap());
+    println!("{}", kbs.run_action(&"X".to_string()).unwrap());
 }

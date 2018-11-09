@@ -24,10 +24,10 @@ pub type Action<'a, R> = &'a (Fn () -> R + 'a);
 /// to avoid confusion in larger programs and for
 /// readability.
 pub struct KeyBindings<'a, E, R>(HashMap<E, Action<'a, R>>)
-    where E: Clone + Hash + Eq, R: 'a;
+    where E: Hash + Eq, R: 'a;
 
 impl <'a, E, R> KeyBindings<'a, E, R>
-    where E: Clone + Hash + Eq, R: 'a
+    where E: Hash + Eq, R: 'a
 {
     /// Make a new empty keybinding.
     pub fn new() -> Self {
@@ -37,38 +37,42 @@ impl <'a, E, R> KeyBindings<'a, E, R>
 
     /// Make a new keybinding containing each binding in the
     /// list.
-    pub fn new_with_bindings<T>(bindings: &[(T, Action<'a, R>)]) -> Self
-        where T: Borrow<E>
+    pub fn new_with_bindings<'b, T>(bindings: &'a [(&'b T, Action<'a, R>)])
+                                    -> Self
+        where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
     {
         let mut kbs = KeyBindings::new();
-        for &(ref key, action) in bindings {
-            kbs.bind_key(key.borrow(), action);
+        for (key, action) in bindings.iter() {
+            kbs.bind_key(key.to_owned(), action);
         }
         kbs
     }
     
     /// Given a key present in the map, get the
     /// corresponding action.
-    pub fn get_action<T>(&self, key: T) -> Option<Action<'a, R>>
-        where T: AsRef<E>
+    pub fn get_action<T>(&self, key: &T) -> Option<Action<'a, R>>
+        where E: Borrow<T>, T: Hash + Eq + ?Sized
     {
-        self.0.get(key.as_ref()).and_then(|&action| Some(action))
+        self.0.get(key.borrow()).and_then(|&action| Some(action))
     }
 
     /// Given a key present in the map, run the
     /// corresponding action and return the result.
-    pub fn run_action<T>(&self, key: T) -> Option<R>
-        where T: AsRef<E>
+    pub fn run_action<T>(&self, key: &T) -> Option<R>
+        where E: Borrow<T>, T: Hash + Eq + ?Sized
     {
         self.get_action(key).and_then(|action| Some(action()))
     }
     
+    // XXX See
+    // https://github.com/rust-lang/rust/issues/31228
+    // for why the types are a little funny.
+
     /// Overwrite or create a keybinding.
     /// `self.get_action()` is useful for rebinding keys.
-    pub fn bind_key<T>(&mut self, key: T, action: Action<'a, R>)
-        where T: Borrow<E>
+    pub fn bind_key<T>(&mut self, key: &T, action: Action<'a, R>)
+        where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
     {
-        let key: E = key.borrow().clone();
-        self.0.insert(key, action);
+        self.0.insert(key.to_owned(), action);
     }
 }
