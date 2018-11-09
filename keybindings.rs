@@ -9,52 +9,66 @@
 //! Rust using "function pointer" trait objects.
 
 use std::collections::HashMap;
+use std::hash::Hash;
+use std::borrow::{Borrow, ToOwned};
 
 /// Commands will be represented as trait objects with a
 /// common interface. As implemented, `'static` is
 /// required. It would be straightforward to implement this
 /// for arbitrary lifetimes, but it would noise up the code
 /// a bit.
-pub type Action<'a, T> = &'a (Fn () -> T + 'a);
+pub type Action<'a, R> = &'a (Fn () -> R + 'a);
 
 /// A `HashMap` is a great way to represent keybindings:
 /// efficient lookup and interior mutability. Newtype this
 /// to avoid confusion in larger programs and for
 /// readability.
-pub struct KeyBindings<'a, T: 'a>(HashMap<String, Action<'a, T>>);
+pub struct KeyBindings<'a, E, R>(HashMap<E, Action<'a, R>>)
+    where E: Clone + Hash + Eq, R: 'a;
 
-impl <'a, T:'a> KeyBindings<'a, T> {
-
+impl <'a, E, R> KeyBindings<'a, E, R>
+    where E: Clone + Hash + Eq, R: 'a
+{
     /// Make a new empty keybinding.
     pub fn new() -> Self {
-        KeyBindings(HashMap::new())
+        let h: HashMap<E, Action<R>> = HashMap::new();
+        KeyBindings(h)
     }
 
     /// Make a new keybinding containing each binding in the
     /// list.
-    pub fn new_with_bindings(bindings: &[(&str, Action<'a, T>)]) -> Self {
+    pub fn new_with_bindings<T>(bindings: &[(T, Action<'a, R>)]) -> Self
+        where T: Borrow<E>
+    {
         let mut kbs = KeyBindings::new();
-        for &(key, action) in bindings.iter() {
-            kbs.bind_key(key, action);
+        for &(ref key, action) in bindings {
+            kbs.bind_key(key.borrow(), action);
         }
         kbs
     }
     
     /// Given a key present in the map, get the
     /// corresponding action.
-    pub fn get_action(&self, key: &str) -> Option<Action<'a, T>> {
-        self.0.get(key).and_then(|&action| Some(action))
+    pub fn get_action<T>(&self, key: T) -> Option<Action<'a, R>>
+        where T: AsRef<E>
+    {
+        self.0.get(key.as_ref()).and_then(|&action| Some(action))
     }
 
     /// Given a key present in the map, run the
     /// corresponding action and return the result.
-    pub fn run_action(&self, key: &str) -> Option<T> {
+    pub fn run_action<T>(&self, key: T) -> Option<R>
+        where T: AsRef<E>
+    {
         self.get_action(key).and_then(|action| Some(action()))
     }
     
     /// Overwrite or create a keybinding.
     /// `self.get_action()` is useful for rebinding keys.
-    pub fn bind_key(&mut self, key: &str, action: Action<'a, T>) {
-        self.0.insert(key.to_string(), action);
+    pub fn bind_key<T>(&mut self, key: T, action: Action<'a, R>)
+        where T: Borrow<E>
+    {
+        let key: E = key.borrow().clone();
+        self.0.insert(key, action);
     }
 }
