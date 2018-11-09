@@ -5,24 +5,23 @@
 
 
 //! Implementation of the "Command Pattern"
-//! <http://gameprogrammingpatterns.com/command.html> in
-//! Rust using "function pointer" trait objects.
+//! <http://gameprogrammingpatterns.com/command.html>.
 
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::borrow::{Borrow, ToOwned};
 
-/// Commands will be represented as trait objects with a
-/// common interface. As implemented, `'static` is
-/// required. It would be straightforward to implement this
-/// for arbitrary lifetimes, but it would noise up the code
-/// a bit.
+/// Type of actions with the given result type.
 pub type Action<'a, R> = &'a (Fn () -> R + 'a);
 
-/// A `HashMap` is a great way to represent keybindings:
-/// efficient lookup and interior mutability. Newtype this
-/// to avoid confusion in larger programs and for
-/// readability.
+// A `HashMap` is a great way to represent keybindings:
+// efficient lookup and interior mutability. Newtype this
+// to avoid confusion in larger programs and for
+// readability.
+
+/// A `KeyBindings` object manages bindings between events
+/// and actions. It has the capability to execute the
+/// selected action given an event.
 pub struct KeyBindings<'a, E, R>(HashMap<E, Action<'a, R>>)
     where E: Hash + Eq, R: 'a;
 
@@ -61,8 +60,9 @@ impl <'a, E, R> KeyBindings<'a, E, R>
         kbs
     }
 
-    /// Given a key present in the map, run the
-    /// corresponding action and return the result.
+    /// Given an event that is in the bindings, run the
+    /// corresponding action and return the result.  Return
+    /// `None` if no such event is bound.
     ///
     /// # Examples:
     ///
@@ -103,8 +103,12 @@ impl <'a, E, R> KeyBindings<'a, E, R>
         self.0.insert(key.borrow().to_owned(), action);
     }
     
-    /// Given a key present in the map, get the
-    /// corresponding action.
+    /// Given an event that is in the bindings, return the
+    /// corresponding action unexecuted.  Return
+    /// `None` if no such event is bound.
+    ///
+    /// # Examples:
+    ///
     /// ```
     /// use keybindings::{Action, KeyBindings};
     /// let aok: Action<String> = &|| {
