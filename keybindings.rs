@@ -31,12 +31,25 @@ impl <'a, E, R> KeyBindings<'a, E, R>
 {
     /// Make a new empty keybinding.
     pub fn new() -> Self {
-        let h: HashMap<E, Action<R>> = HashMap::new();
-        KeyBindings(h)
+        KeyBindings(HashMap::new())
     }
 
     /// Make a new keybinding containing each binding in the
     /// list.
+    ///
+    /// # Examples:
+    ///
+    /// ```
+    /// use keybindings::{Action, KeyBindings};
+    /// fn build_action<'a>(n: usize) -> Box<Fn() -> usize> {
+    ///     Box::new(move || { n })
+    /// }
+    /// let aok = build_action(1);
+    /// let bok = build_action(2);
+    /// let bindings: &[_] = &[("a", &*aok), ("b", &*bok)];
+    /// let mut kc = KeyBindings::new_with_bindings(bindings);
+    /// assert_eq!(kc.run_action("a").unwrap(), 1);
+    /// ```
     pub fn new_with_bindings<'b, T>(bindings: &'a [(&'b T, Action<'a, R>)])
                                     -> Self
         where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
@@ -47,17 +60,21 @@ impl <'a, E, R> KeyBindings<'a, E, R>
         }
         kbs
     }
-    
-    /// Given a key present in the map, get the
-    /// corresponding action.
-    pub fn get_action<T>(&self, key: &T) -> Option<Action<'a, R>>
-        where E: Borrow<T>, T: Hash + Eq + ?Sized
-    {
-        self.0.get(key.borrow()).and_then(|&action| Some(action))
-    }
 
     /// Given a key present in the map, run the
     /// corresponding action and return the result.
+    ///
+    /// # Examples:
+    ///
+    /// ```
+    /// use keybindings::{Action, KeyBindings};
+    /// let aok: Action<String> = &|| {
+    ///     "aok".to_string()
+    /// };
+    /// let bindings = &[("a", aok)];
+    /// let mut kc = KeyBindings::new_with_bindings(bindings);
+    /// assert_eq!(kc.run_action("a").unwrap(), "aok");
+    /// ```
     pub fn run_action<T>(&self, key: &T) -> Option<R>
         where E: Borrow<T>, T: Hash + Eq + ?Sized
     {
@@ -65,14 +82,43 @@ impl <'a, E, R> KeyBindings<'a, E, R>
     }
     
     // XXX See
-    // https://github.com/rust-lang/rust/issues/31228
-    // for why the types are a little funny.
+    // <https://github.com/rust-lang/rust/issues/31228> for
+    // why the types are a little funny.
 
     /// Overwrite or create a keybinding.
     /// `self.get_action()` is useful for rebinding keys.
+    ///
+    /// # Examples:
+    ///
+    /// ```
+    /// use keybindings::KeyBindings;
+    /// let one = || {1};
+    /// let mut kc = KeyBindings::new();
+    /// kc.bind_key(&'a', &one);
+    /// assert_eq!(kc.run_action(&'a').unwrap(), 1);
+    /// ```
     pub fn bind_key<T>(&mut self, key: &T, action: Action<'a, R>)
         where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
     {
-        self.0.insert(key.to_owned(), action);
+        self.0.insert(key.borrow().to_owned(), action);
+    }
+    
+    /// Given a key present in the map, get the
+    /// corresponding action.
+    /// ```
+    /// use keybindings::{Action, KeyBindings};
+    /// let aok: Action<String> = &|| {
+    ///     "aok".to_string()
+    /// };
+    /// let bindings = &[("a", aok)];
+    /// let mut kc = KeyBindings::new_with_bindings(bindings);
+    /// let ax = kc.get_action("a").unwrap();
+    /// kc.bind_key("b", ax);
+    /// assert_eq!(kc.run_action("b").unwrap(), "aok");
+    /// ```
+    pub fn get_action<T>(&self, key: &T) -> Option<Action<'a, R>>
+        where E: Borrow<T>, T: Hash + Eq + ?Sized
+    {
+        self.0.get(key.borrow()).and_then(|&action| Some(action))
     }
 }
