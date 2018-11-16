@@ -49,12 +49,13 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// let mut kc = Bindings::from_list(bindings);
     /// assert_eq!(kc.run_action("a").unwrap(), 1);
     /// ```
-    pub fn from_list<'b, T>(bindings: &'a [(&'b T, Action<'a, R>)])
-                                    -> Self
-        where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
+    pub fn from_list<T, U>(bindings: U) -> Self
+        where U: AsRef<[(&'a T, Action<'a, R>)]> + 'a,
+              E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized + 'a
     {
         let mut kbs = Bindings::new();
-        for (key, action) in bindings.iter() {
+        let b = bindings.as_ref();
+        for (ref key, action) in b.iter() {
             kbs.bind_action(key.to_owned(), action);
         }
         kbs
