@@ -51,12 +51,12 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// ```
     pub fn from_list<T, U>(bindings: U) -> Self
         where U: AsRef<[(&'a T, Action<'a, R>)]> + 'a,
-              E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized + 'a
+              E: Borrow<T>, T: ToOwned<Owned=E> + Hash + Eq + ?Sized + 'a
     {
         let mut kbs = Bindings::new();
         let b = bindings.as_ref();
-        for (ref key, action) in b.iter() {
-            kbs.bind_action(key.to_owned(), action);
+        for &(key, action) in b.iter() {
+            kbs.bind_action(key, action);
         }
         kbs
     }
