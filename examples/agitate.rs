@@ -29,7 +29,7 @@ fn scream() -> String {
 
 /// Mess around with the keybindings.
 fn main() {
-    let mut kbs = Bindings::from_list(KEYCODES);
+    let mut kbs: Bindings<String, String> = Bindings::from_list(KEYCODES);
     println!("{}", kbs.run_action("X").unwrap());
     let y_action = kbs.get_action("Y").unwrap();
     kbs.bind_action("X", y_action);

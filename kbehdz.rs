@@ -33,7 +33,7 @@ impl <'a, E, R> Bindings<'a, E, R>
         Bindings(HashMap::new())
     }
 
-    /// Make a new keybinding containing each binding in the
+    /// Make a new `Bindings` containing each binding in the
     /// list.
     ///
     /// # Examples:
@@ -53,10 +53,11 @@ impl <'a, E, R> Bindings<'a, E, R>
         where U: AsRef<[(&'a T, Action<'a, R>)]> + 'a,
               E: Borrow<T>, T: ToOwned<Owned=E> + Hash + Eq + ?Sized + 'a
     {
-        let mut kbs = Bindings::new();
+        let mut kbs: Bindings<E, R> = Bindings::new();
         let b = bindings.as_ref();
-        for &(key, action) in b.iter() {
-            kbs.bind_action(key, action);
+        for &(ref key, action) in b.iter() {
+            let e: E = (*key).to_owned();
+            kbs.0.insert(e, action);
         }
         kbs
     }
@@ -76,18 +77,20 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// let mut kc = Bindings::from_list(bindings);
     /// assert_eq!(kc.run_action("a").unwrap(), "aok");
     /// ```
-    pub fn run_action<T>(&self, key: &T) -> Option<R>
+    pub fn run_action<T>(&self, event: &T) -> Option<R>
         where E: Borrow<T>, T: Hash + Eq + ?Sized
     {
-        self.get_action(key).and_then(|action| Some(action()))
+        self.get_action(event).and_then(|action| Some(action()))
     }
     
     // XXX See
     // <https://github.com/rust-lang/rust/issues/31228> for
     // why the types are a little funny.
 
-    /// Overwrite or create a keybinding.
+    /// Overwrite or create a binding.
     /// `self.get_action()` is useful for rebinding keys.
+    /// The event must be passed by reference: it will be
+    /// converted to an owned type.
     ///
     /// # Examples:
     ///
@@ -98,10 +101,10 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// kc.bind_action(&'a', &one);
     /// assert_eq!(kc.run_action(&'a').unwrap(), 1);
     /// ```
-    pub fn bind_action<T>(&mut self, key: &T, action: Action<'a, R>)
+    pub fn bind_action<T>(&mut self, event: &T, action: Action<'a, R>)
         where E: Borrow<T>, T: ToOwned<Owned=E> + ?Sized
     {
-        self.0.insert(key.borrow().to_owned(), action);
+        self.0.insert(event.to_owned(), action);
     }
     
     /// Given an event that is in the bindings, return the
@@ -121,9 +124,9 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// kc.bind_action("b", ax);
     /// assert_eq!(kc.run_action("b").unwrap(), "aok");
     /// ```
-    pub fn get_action<T>(&self, key: &T) -> Option<Action<'a, R>>
+    pub fn get_action<T>(&self, event: &T) -> Option<Action<'a, R>>
         where E: Borrow<T>, T: Hash + Eq + ?Sized
     {
-        self.0.get(key.borrow()).and_then(|&action| Some(action))
+        self.0.get(event).and_then(|&action| Some(action))
     }
 }
