@@ -10,6 +10,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::borrow::{Borrow, ToOwned};
+use std::iter::FromIterator;
 
 /// Type of actions with the given result type.
 pub type Action<'a, R> = &'a (Fn () -> R + 'a);
@@ -25,16 +26,14 @@ pub type Action<'a, R> = &'a (Fn () -> R + 'a);
 pub struct Bindings<'a, E, R>(HashMap<E, Action<'a, R>>)
     where E: Hash + Eq, R: 'a;
 
-impl <'a, E, R> Bindings<'a, E, R>
-    where E: Hash + Eq, R: 'a
+impl<'a, T, E, R> FromIterator<&'a (&'a T, Action<'a, R>)>
+    for Bindings<'a, E, R>
+    where E: Borrow<T> + Hash + Eq,
+          T: ToOwned<Owned=E> + Hash + Eq + ?Sized + 'a,
+          R: 'a
 {
-    /// Make a new empty binding.
-    pub fn new() -> Self {
-        Bindings(HashMap::new())
-    }
 
-    /// Make a new `Bindings` containing each binding in the
-    /// list.
+    /// Make a new `Bindings` out of the iterator.
     ///
     /// # Examples:
     ///
@@ -46,19 +45,28 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// let aok = build_action(1);
     /// let bok = build_action(2);
     /// let bindings: &[_] = &[("a", &*aok), ("b", &*bok)];
-    /// let mut kc = Bindings::with_init(bindings);
+    /// let mut kc: Bindings<String, usize> =
+    ///     bindings.into_iter().collect();
     /// assert_eq!(kc.run_action("a").unwrap(), 1);
     /// ```
-    pub fn with_init<T, U>(bindings: U) -> Self
-        where U: IntoIterator<Item=&'a (&'a T, Action<'a, R>)>,
-              E: Borrow<T>, T: ToOwned<Owned=E> + Hash + Eq + ?Sized + 'a
+    fn from_iter<U>(iter: U) -> Self
+        where U: IntoIterator<Item=&'a (&'a T, Action<'a, R>)>
     {
         let mut kbs: Bindings<E, R> = Bindings::new();
-        for &(key, action) in bindings {
-            let e: E = key.to_owned();
+        for (key, action) in iter {
+            let e: E = (*key).to_owned();
             kbs.0.insert(e, action);
         }
         kbs
+    }
+}
+
+impl <'a, E, R> Bindings<'a, E, R>
+    where E: Hash + Eq, R: 'a
+{
+    /// Make a new empty binding.
+    pub fn new() -> Self {
+        Bindings(HashMap::new())
     }
 
     /// Given an event that is in the bindings, run the
@@ -73,7 +81,8 @@ impl <'a, E, R> Bindings<'a, E, R>
     ///     "aok".to_string()
     /// };
     /// let bindings = &[("a", aok)];
-    /// let mut kc = Bindings::with_init(bindings);
+    /// let mut kc: Bindings<String, String> =
+    ///     bindings.into_iter().collect();
     /// assert_eq!(kc.run_action("a").unwrap(), "aok");
     /// ```
     pub fn run_action<T>(&self, event: &T) -> Option<R>
@@ -118,7 +127,8 @@ impl <'a, E, R> Bindings<'a, E, R>
     ///     "aok".to_string()
     /// };
     /// let bindings = &[("a", aok)];
-    /// let mut kc = Bindings::with_init(bindings);
+    /// let mut kc: Bindings<String, String> =
+    ///     bindings.into_iter().collect();
     /// let ax = kc.get_action("a").unwrap();
     /// kc.bind_action("b", ax);
     /// assert_eq!(kc.run_action("b").unwrap(), "aok");
