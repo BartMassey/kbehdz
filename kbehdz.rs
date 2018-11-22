@@ -46,17 +46,16 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// let aok = build_action(1);
     /// let bok = build_action(2);
     /// let bindings: &[_] = &[("a", &*aok), ("b", &*bok)];
-    /// let mut kc = Bindings::from_list(bindings);
+    /// let mut kc = Bindings::with_init(bindings);
     /// assert_eq!(kc.run_action("a").unwrap(), 1);
     /// ```
-    pub fn from_list<T, U>(bindings: U) -> Self
-        where U: AsRef<[(&'a T, Action<'a, R>)]> + 'a,
+    pub fn with_init<T, U>(bindings: U) -> Self
+        where U: IntoIterator<Item=&'a (&'a T, Action<'a, R>)>,
               E: Borrow<T>, T: ToOwned<Owned=E> + Hash + Eq + ?Sized + 'a
     {
         let mut kbs: Bindings<E, R> = Bindings::new();
-        let b = bindings.as_ref();
-        for &(ref key, action) in b.iter() {
-            let e: E = (*key).to_owned();
+        for &(key, action) in bindings {
+            let e: E = key.to_owned();
             kbs.0.insert(e, action);
         }
         kbs
@@ -74,7 +73,7 @@ impl <'a, E, R> Bindings<'a, E, R>
     ///     "aok".to_string()
     /// };
     /// let bindings = &[("a", aok)];
-    /// let mut kc = Bindings::from_list(bindings);
+    /// let mut kc = Bindings::with_init(bindings);
     /// assert_eq!(kc.run_action("a").unwrap(), "aok");
     /// ```
     pub fn run_action<T>(&self, event: &T) -> Option<R>
@@ -119,7 +118,7 @@ impl <'a, E, R> Bindings<'a, E, R>
     ///     "aok".to_string()
     /// };
     /// let bindings = &[("a", aok)];
-    /// let mut kc = Bindings::from_list(bindings);
+    /// let mut kc = Bindings::with_init(bindings);
     /// let ax = kc.get_action("a").unwrap();
     /// kc.bind_action("b", ax);
     /// assert_eq!(kc.run_action("b").unwrap(), "aok");
