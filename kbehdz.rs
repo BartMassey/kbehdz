@@ -46,7 +46,7 @@ impl<'a, T, E, R> FromIterator<&'a (&'a T, Action<'a, R>)>
     /// let bok = build_action(2);
     /// let bindings: &[_] = &[("a", &*aok), ("b", &*bok)];
     /// let mut kc: Bindings<String, usize> =
-    ///     bindings.into_iter().collect();
+    ///     bindings.iter().collect();
     /// assert_eq!(kc.run_action("a").unwrap(), 1);
     /// ```
     fn from_iter<U>(iter: U) -> Self
@@ -82,7 +82,7 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// };
     /// let bindings = &[("a", aok)];
     /// let mut kc: Bindings<String, String> =
-    ///     bindings.into_iter().collect();
+    ///     bindings.iter().collect();
     /// assert_eq!(kc.run_action("a").unwrap(), "aok");
     /// ```
     pub fn run_action<T>(&self, event: &T) -> Option<R>
@@ -92,8 +92,8 @@ impl <'a, E, R> Bindings<'a, E, R>
     }
     
     // XXX See
-    // <https://github.com/rust-lang/rust/issues/31228> for
-    // why the types are a little funny.
+    // <http://github.com/rust-lang/rust/issues/31228#issuecomment-178293678>
+    // for why the types are a little funny.
 
     /// Overwrite or create a binding.
     /// `self.get_action()` is useful for rebinding keys.
@@ -128,7 +128,7 @@ impl <'a, E, R> Bindings<'a, E, R>
     /// };
     /// let bindings = &[("a", aok)];
     /// let mut kc: Bindings<String, String> =
-    ///     bindings.into_iter().collect();
+    ///     bindings.iter().collect();
     /// let ax = kc.get_action("a").unwrap();
     /// kc.bind_action("b", ax);
     /// assert_eq!(kc.run_action("b").unwrap(), "aok");
